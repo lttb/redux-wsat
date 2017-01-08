@@ -1,0 +1,12 @@
+parser: babel-eslint
+extends: airbnb
+rules:
+  no-console: 0
+  no-unused-expressions:
+    - error
+    - allowShortCircuit: true
+  import/no-unresolved: [2, { ignore: ['^~.*', '\./style'] }]
+  import/extensions: 0
+env:
+  browser: true
+  es6: true

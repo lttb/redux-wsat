@@ -1,0 +1,36 @@
+{
+  "name": "redux-wsat",
+  "version": "0.0.1",
+  "description": "Redux Websocket Action Transfer",
+  "main": "src/index.js",
+  "scripts": {
+    "lint": "node_modules/.bin/eslint src"
+  },
+  "files": [
+    "src"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/lttb/redux-wsat.git"
+  },
+  "keywords": [
+    "redux",
+    "react",
+    "websocket",
+    "action"
+  ],
+  "author": "Kenzhaev Artur",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/lttb/redux-wsat/issues"
+  },
+  "homepage": "https://github.com/lttb/redux-wsat#readme",
+  "devDependencies": {
+    "babel-eslint": "^7.1.1",
+    "eslint": "^3.13.0",
+    "eslint-config-airbnb": "^13.0.0",
+    "eslint-plugin-import": "^2.2.0",
+    "eslint-plugin-jsx-a11y": "^2.2.3",
+    "eslint-plugin-react": "^6.8.0"
+  }
+}
