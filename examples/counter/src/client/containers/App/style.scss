@@ -1,0 +1,19 @@
+.app {
+  position: absolute;
+  top: 0;
+  left: 0;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  overflow-y: auto;
+  width: 100vw;
+  height: 100vh;
+
+  .content {
+    padding: 20px;
+
+    .header {
+      border-bottom: 1px solid #eee;
+    }
+  }
+}

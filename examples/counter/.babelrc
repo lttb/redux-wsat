@@ -1,0 +1,10 @@
+{
+  "presets": [
+    "airbnb",
+  ],
+  "plugins": [
+    ["babel-root-import", {
+      "rootPathSuffix": "src/client"
+    }]
+  ]
+}
