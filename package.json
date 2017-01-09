@@ -1,6 +1,6 @@
 {
   "name": "redux-wsat",
-  "version": "0.0.1",
+  "version": "0.0.2",
   "description": "Redux Websocket Action Transfer",
   "main": "src/index.js",
   "scripts": {
