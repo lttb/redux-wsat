@@ -1,6 +1,8 @@
 export default (init, {
   prepareAction = action => JSON.stringify({ action }),
+
   isWSAT = action => action.wsat !== false,
+
   getAction = ({ data }) => {
     const { action } = JSON.parse(data);
 
@@ -9,36 +11,39 @@ export default (init, {
 } = {}) => {
   let socket = init();
 
-  const { onclose, onopen, onmessage } = socket;
+  const { onclose, onmessage } = socket;
 
   const ws = (store) => {
     socket.onmessage = (message) => {
       const action = getAction(message);
 
       action && store.dispatch(action);
-      onmessage && onmessage(message);
+
+      onmessage && onmessage({ store, message });
     };
 
-    return next => action => (isWSAT(action)
+    socket.onclose = () => {
+      socket = Object.assign(init(), {
+        onmessage: socket.onmessage,
+        onclose: socket.onclose,
+      });
+
+      onclose && onclose({ store });
+    };
+
+    return next => action => (socket.readyState === 1 && isWSAT(action)
       ? socket.send(prepareAction(action))
       : next(action)
     );
   };
 
-  socket.onclose = () => {
-    socket = Object.assign(init(), {
-      onmessage: socket.onmessage,
-      onclose: socket.onclose,
-    });
-
-    onclose && onclose();
-  };
-
-  return new Promise((resolve) => {
+  return new Promise((resolve, reject) => {
     socket.onopen = () => {
-      onopen();
-
       resolve({ ws, socket });
+    };
+
+    socket.onerror = (error) => {
+      reject({ error, ws, socket });
     };
   });
 };
