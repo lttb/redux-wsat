@@ -1,29 +1,30 @@
-export default (init, {
-  prepareAction = action => JSON.stringify({ action }),
+const ReduxWsatError = require('./ReduxWsatError');
+const actionHelpers = require('./actionHelpers');
 
-  isWSAT = action => action.wsat !== false,
-
-  getAction = ({ data }) => {
-    const { action } = JSON.parse(data);
-
-    return action && Object.assign({ wsat: false }, action);
-  },
-} = {}) => {
+module.exports = (init, { prepareAction, getAction, isWSAT } = actionHelpers) => {
   let socket = init();
 
-  const { onclose, onmessage } = socket;
+  const { onmessage, onclose, onerror } = socket;
 
   const ws = (store) => {
     socket.onmessage = (message) => {
-      const action = getAction(message);
+      try {
+        const action = getAction(message);
 
-      action && store.dispatch(action);
+        action && store.dispatch(action);
 
-      onmessage && onmessage({ store, message });
+        onmessage && onmessage({ store, message });
+      } catch (error) {
+        if (onerror) {
+          onerror({ error, store, message });
+        } else {
+          throw new ReduxWsatError(error, message);
+        }
+      }
     };
 
     socket.onclose = () => {
-      socket = Object.assign(init(), {
+      socket = Object.assign({}, init(), {
         onmessage: socket.onmessage,
         onclose: socket.onclose,
       });
