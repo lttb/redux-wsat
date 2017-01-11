@@ -20,18 +20,36 @@ And on each service layer *action types* may be common or specified with convers
 
 It also allows you to get rid of such this in your code: `crud.updateUser(...)`, because all action that you would like to send on server will send automatically.
 
-> You can initialize WS-connection asynchronously by *action type* - pass it in options like:
-
-> ```js
-{ actions: { INIT } }
-```
+> You can initialize WS-connection asynchronously by *action type* - pass it in options like: `
+{ actions: { INIT } } `
 > See [counter](https://github.com/lttb/redux-wsat/tree/master/examples/counter) for example.
 
 
 ## Usage
-ReduxWSAT takes to args: *WebSocket Initor* (required) and options.
 
-In the current implementation inited socket instance need to have `onclose`, `onopen` and `onmessage` event handlers like [native WebSocket API](https://developer.mozilla.org/en-US/docs/Web/API/WebSocket).
+The default data-flow is:
+
+1) UI produced some action;
+2) WSAT middleware;
+3) server handle that action and send to clients action that they need to dispatch;
+4) clients recieve action from server, dispatch and update UI.
+
+This flow allows you to have one data-flow direction and have more consistent data, espacially for collaborative working.
+
+
+ReduxWSAT takes two arguments:
+
+- *WebSocket Initor* (required). Returns socket or something that resolves `onmessage` and `onclose` (optional, for reconnect) and represent the interface like [native WebSocket API](https://developer.mozilla.org/en-US/docs/Web/API/WebSocket): 
+  - `{ onmessage, onclose, onerror }` - optional, for events handling from WSAT;
+  - `{ send }` - required, for message sending to server.
+- options. `{ retry: { timeout }, actions: { INIT }, helpers: { isWSAT, prepareAction, getAction, isClientFirst } }`
+  - `retry: { timeout }` By default retries to connect without timeout;
+  - `actions: { INIT }` By default {}. `INIT` is *action type* for async socket initialization;
+  - `helpers: { isWSAT, prepareAction, getAction, isClientFirst }`
+    - `isWSAT` - checks action for server sending. By default send all actions but `action.wsat === false`
+    - `prepareAction` - prepare action for sending to server. By default `action => JSON.stringify({ action })`
+    - `getAction` - returns action that received from socket, that would be dispatched (if Boolean(result)). By default return `{ wsat: false, ...action }`
+    - `isClientFirst` - checks if you need to dispatch that action on client too. Be careful, you can dispatch this action twice, if server send this action back to author
 
 Let's say we have this *configureStore.js*:
 

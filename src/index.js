@@ -1,8 +1,12 @@
 const ReduxWsatError = require('./ReduxWsatError');
 const actionHelpers = require('./actionHelpers');
 
-module.exports = (init, { helpers, actions = {} } = {}) => {
-  const { isWSAT, prepareAction, getAction } = helpers || actionHelpers;
+module.exports = (init, {
+  retry = {},
+  actions = {},
+  helpers = actionHelpers,
+} = {}) => {
+  const { isWSAT, prepareAction, getAction, isClientFirst } = helpers;
 
   return (store) => {
     let socket = {
@@ -37,7 +41,13 @@ module.exports = (init, { helpers, actions = {} } = {}) => {
       };
 
       socket.onclose = () => {
-        initWrapper();
+        if (retry) {
+          if (retry.timeout) {
+            setTimeout(initWrapper, retry.timeout);
+          } else {
+            initWrapper();
+          }
+        }
 
         onclose && onclose();
       };
@@ -49,7 +59,11 @@ module.exports = (init, { helpers, actions = {} } = {}) => {
 
     return next => (action) => {
       if (socket.isOpened() && isWSAT(action)) {
-        return socket.send(prepareAction(action));
+        socket.send(prepareAction(action));
+
+        if (!isClientFirst(action)) {
+          return null;
+        }
       }
 
       if (socket.isClosed() && action.type === actions.INIT) {
