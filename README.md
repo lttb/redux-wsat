@@ -20,34 +20,46 @@ And on each service layer *action types* may be common or specified with convers
 
 It also allows you to get rid of such this in your code: `crud.updateUser(...)`, because all action that you would like to send on server will send automatically.
 
+> You can initialize WS-connection asynchronously by *action type* - pass it in options like:
+
+> ```js
+{ actions: { INIT } }
+```
+> See [counter](https://github.com/lttb/redux-wsat/tree/master/examples/counter) for example.
+
+
 ## Usage
 ReduxWSAT takes to args: *WebSocket Initor* (required) and options.
 
 In the current implementation inited socket instance need to have `onclose`, `onopen` and `onmessage` event handlers like [native WebSocket API](https://developer.mozilla.org/en-US/docs/Web/API/WebSocket).
 
-For example let's say we have this *configureStore.js*:
+Let's say we have this *configureStore.js*:
 
 ```js
 import { createStore, applyMiddleware, compose } from 'redux';
 
-import reduxWSAT from 'redux-wsat';
+import WSAT from 'redux-wsat';
 
 import rootReducer from '~/reducers';
 import { wsConfig } from '~/config';
 
-export default () => reduxWSAT(() => {
-  const socket = new WebSocket(
-    `${wsConfig.protocol}://${wsConfig.host}`,
-  );
+export default () => {
+  const wsat = WSAT(() => {
+    const socket = new WebSocket(wsConfig.url);
 
-  socket.onerror = error => console.log('WS error', error);
-  socket.onclose = () => console.log('WS connection closed');
-  socket.onopen = () => console.log('WS connection established');
+    socket.onerror = error => console.log('WS error', error);
+    socket.onclose = () => console.log('WS connection closed');
+    socket.onopen = () => console.log('WS connection established');
 
-  return socket;
-}).then(({ ws }) => createStore(rootReducer, {}, compose(
-  applyMiddleware(ws),
-)));
+    return socket;
+  });
+
+  const store = createStore(rootReducer, {}, compose(
+    applyMiddleware(wsat),
+  ));
+
+  return store;
+};
 ```
 
 And stateless server, that keeps websocket connections and send received messages to all clients:
@@ -60,6 +72,4 @@ wss.on('connection', ws =>
 So thats it - we send all **actions** from client to server and then transfer them for each client (includes author), where they dispatch and update clients store and UI.
 
 
-
-
-You can also check [counter example](https://github.com/lttb/redux-wsat/tree/master/examples/counter)
+You can also check [counter example](https://github.com/lttb/redux-wsat/tree/master/examples/counter) with async socket initialization and action dispatch in socket event listners

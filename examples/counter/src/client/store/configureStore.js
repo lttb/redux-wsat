@@ -1,20 +1,42 @@
 import { createStore, applyMiddleware, compose } from 'redux';
 
-import reduxWSAT from 'redux-wsat';
-
 import rootReducer from '~/reducers';
 import { wsConfig } from '~/config';
 
-export default () => reduxWSAT(() => {
-  const socket = new WebSocket(
-    `${wsConfig.protocol}://${wsConfig.host}`,
-  );
+import { appWSOpen, appWSClose, appWSInit } from '~/actions';
+import { APP_WS_INIT } from '~/constants/ActionTypes';
 
-  socket.onerror = error => console.log('WS error', error);
-  socket.onclose = () => console.log('WS connection closed');
-  socket.onopen = () => console.log('WS connection established');
+import WSAT from 'redux-wsat';
 
-  return socket;
-}).then(({ ws }) => createStore(rootReducer, {}, compose(
-  applyMiddleware(ws),
-)));
+
+const INIT_TIMEOUT = 1000;
+
+const onSocketInit = store => store.dispatch(appWSInit());
+const onSocketOpen = store => store.dispatch(appWSOpen());
+const onSocketClose = store => store.dispatch(appWSClose());
+
+export default () => {
+  const wsat = WSAT((store) => {
+    const ws = new WebSocket(wsConfig.url);
+
+    ws.onerror = error => console.log('WS error', error);
+    ws.onclose = () => onSocketClose(store);
+    ws.onopen = () => {
+      console.log('WS connection established!');
+
+      onSocketOpen(store);
+    };
+
+    return ws;
+  }, {
+    actions: { INIT: APP_WS_INIT },
+  });
+
+  const store = createStore(rootReducer, {}, compose(
+    applyMiddleware(wsat),
+  ));
+
+  setTimeout(() => onSocketInit(store), INIT_TIMEOUT);
+
+  return store;
+};

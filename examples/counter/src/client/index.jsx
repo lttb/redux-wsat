@@ -5,11 +5,12 @@ import { Provider } from 'react-redux';
 import App from './containers/App';
 import configureStore from './store/configureStore';
 
-configureStore().then((store) => {
-  render(
-    <Provider store={store}>
-      <App />
-    </Provider>,
-    document.getElementById('app'),
-  );
-});
+
+const store = configureStore();
+
+render(
+  <Provider store={store}>
+    <App />
+  </Provider>,
+  document.getElementById('app'),
+);

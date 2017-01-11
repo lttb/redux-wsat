@@ -1,2 +1,6 @@
 export const COUNTER_INCREMENT = 'COUNTER_INCREMENT';
 export const COUNTER_DECREMENT = 'COUNTER_DECREMENT';
+
+export const APP_WS_INIT = 'APP_WS_INIT';
+export const APP_WS_OPEN = 'APP_WS_OPEN';
+export const APP_WS_CLOSE = 'APP_WS_CLOSE';

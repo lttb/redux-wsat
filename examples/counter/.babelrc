@@ -1,6 +1,7 @@
 {
   "presets": [
     "airbnb",
+    "stage-0"
   ],
   "plugins": [
     ["babel-root-import", {
