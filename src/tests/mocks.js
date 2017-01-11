@@ -1,9 +1,9 @@
 module.exports = {
   get SOCKET() {
     return {
-      onopen() {},
+      onmessage() {},
       send() {},
-      onerror() {},
+      onclose() {},
     };
   },
 
@@ -22,7 +22,9 @@ module.exports = {
   get MESSAGE() {
     return {
       data: JSON.stringify({
-        action: 'test',
+        action: {
+          type: 'test',
+        },
       }),
     };
   },

@@ -1,50 +1,62 @@
 const ReduxWsatError = require('./ReduxWsatError');
 const actionHelpers = require('./actionHelpers');
 
-module.exports = (init, { prepareAction, getAction, isWSAT } = actionHelpers) => {
-  let socket = init();
+module.exports = (init, { helpers, actions = {} } = {}) => {
+  const { isWSAT, prepareAction, getAction } = helpers || actionHelpers;
 
-  const { onmessage, onclose, onerror } = socket;
-
-  const ws = (store) => {
-    socket.onmessage = (message) => {
-      try {
-        const action = getAction(message);
-
-        action && store.dispatch(action);
-
-        onmessage && onmessage({ store, message });
-      } catch (error) {
-        if (onerror) {
-          onerror({ error, store, message });
-        } else {
-          throw new ReduxWsatError(error, message);
-        }
-      }
+  return (store) => {
+    let socket = {
+      isOpened: () => socket.readyState === 1,
+      isClosed: () => !socket.readyState || socket.readyState > 1,
     };
 
-    socket.onclose = () => {
-      socket = Object.assign({}, init(), {
-        onmessage: socket.onmessage,
-        onclose: socket.onclose,
+    const initWrapper = () => {
+      const newSocket = init(store);
+
+      const { onmessage, onclose, onerror } = newSocket;
+
+      socket = Object.assign(newSocket, {
+        isOpened: newSocket.isOpened || socket.isOpened,
+        isClosed: newSocket.isClosed || socket.isClosed,
       });
 
-      onclose && onclose({ store });
+      socket.onmessage = (message) => {
+        try {
+          const action = getAction(message);
+
+          action && store.dispatch(action);
+
+          onmessage && onmessage({ message });
+        } catch (error) {
+          if (onerror) {
+            onerror({ error, message });
+          } else {
+            throw new ReduxWsatError(error, message);
+          }
+        }
+      };
+
+      socket.onclose = () => {
+        initWrapper();
+
+        onclose && onclose();
+      };
     };
 
-    return next => action => (socket.readyState === 1 && isWSAT(action)
-      ? socket.send(prepareAction(action))
-      : next(action)
-    );
+    if (!actions.INIT) {
+      initWrapper();
+    }
+
+    return next => (action) => {
+      if (socket.isOpened() && isWSAT(action)) {
+        return socket.send(prepareAction(action));
+      }
+
+      if (socket.isClosed() && action.type === actions.INIT) {
+        initWrapper();
+      }
+
+      return next(action);
+    };
   };
-
-  return new Promise((resolve, reject) => {
-    socket.onopen = () => {
-      resolve({ ws, socket });
-    };
-
-    socket.onerror = (error) => {
-      reject({ error, ws, socket });
-    };
-  });
 };

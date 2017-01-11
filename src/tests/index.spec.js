@@ -1,51 +1,61 @@
-const reduxWSAT = require('../');
+const WSAT = require('../');
 const MOCKS = require('./mocks');
 
 describe('Redux WSAT', () => {
-  it('Get socket and ws middleware on connection', () => {
+  it('Get socket and wsat middleware on connection', () => {
     const { SOCKET } = MOCKS;
 
-    setImmediate(() => SOCKET.onopen());
+    const wsat = WSAT(() => SOCKET);
 
-    return reduxWSAT(() => SOCKET).then(({ ws, socket }) => {
-      expect(ws).toBeInstanceOf(Function);
-      expect(socket).toBe(SOCKET);
-    });
+    expect(wsat).toBeInstanceOf(Function);
   });
 
-  it('Get error, socket and ws middleware on connection error', () => {
-    const { SOCKET, ERROR } = MOCKS;
-
-    setImmediate(() => SOCKET.onerror(ERROR));
-
-    return reduxWSAT(() => SOCKET).catch(({ error, ws, socket }) => {
-      expect(ws).toBeInstanceOf(Function);
-      expect(socket).toBe(SOCKET);
-      expect(error).toBe(ERROR);
-    });
-  });
-
-  it('All callbacks must be executed with right args', () => {
+  it('All listeners must be executed with right args and some of the must be overriden', () => {
     const { SOCKET, STORE, MESSAGE } = MOCKS;
 
-    Object.assign(SOCKET, {
-      onmessage: ({ store, message }) => {
-        expect(store).toBe(STORE);
-        expect(message).toBe(MESSAGE);
-      },
+    STORE.dispatch = action =>
+      expect(action).toMatchObject(JSON.parse(MESSAGE.data).action);
 
-      onclose: ({ store }) => {
-        expect(store).toBe(STORE);
-      },
+    const dummy = _ => _;
+    const onclose = jest.fn();
+    const onmessage = ({ message }) => {
+      expect(message).toBe(MESSAGE);
+    };
+
+    SOCKET.onclose = onclose;
+    SOCKET.onmessage = onmessage;
+    SOCKET.dummy = dummy;
+
+    const wsat = WSAT(() => SOCKET);
+
+    wsat(STORE);
+
+    SOCKET.onmessage(MESSAGE);
+    expect(SOCKET.onmessage).not.toBe(onmessage);
+
+    SOCKET.onclose();
+    expect(SOCKET.onclose).not.toBe(onclose);
+    expect(onclose).toHaveBeenCalled();
+
+    expect(SOCKET.dummy).toBe(dummy);
+  });
+
+  it('Onopen must be called after socket close all times', () => {
+    const { SOCKET } = MOCKS;
+
+    const onopen = jest.fn();
+
+    const wsat = WSAT(() => {
+      onopen();
+
+      return SOCKET;
     });
 
-    setImmediate(() => SOCKET.onopen());
+    wsat();
 
-    return reduxWSAT(() => SOCKET).then(({ ws }) => {
-      ws(STORE);
+    const times = ((min, max) => Math.floor(Math.random() * max) + min)(5, 20);
 
-      SOCKET.onmessage(MESSAGE);
-      SOCKET.onclose();
-    });
+    Array(times).fill().forEach(SOCKET.onclose);
+    expect(onopen).toHaveBeenCalledTimes(times + 1);
   });
 });

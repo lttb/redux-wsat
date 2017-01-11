@@ -2,13 +2,19 @@
   "name": "redux-wsat",
   "version": "0.0.2",
   "description": "Redux Websocket Action Transfer",
-  "main": "src/index.js",
+  "main": "lib/index.js",
   "scripts": {
+    "clean": "rm -rf lib/*",
     "lint": "eslint src",
     "test": "jest",
-    "test:watch": "npm test -- --watch"
+    "test:watch": "npm test -- --watch",
+    "prebuild": "npm run clean && npm run lint && npm test",
+    "build": "babel src --out-dir lib --ignore test",
+    "preversion": "npm run build",
+    "postversion": "git push --follow-tags && npm publish"
   },
   "files": [
+    "lib",
     "src"
   ],
   "repository": {
@@ -28,7 +34,11 @@
   },
   "homepage": "https://github.com/lttb/redux-wsat#readme",
   "devDependencies": {
+    "babel-cli": "^6.18.0",
+    "babel-core": "^6.21.0",
     "babel-eslint": "^7.1.1",
+    "babel-preset-airbnb": "^2.1.1",
+    "babel-preset-stage-0": "^6.16.0",
     "eslint": "^3.13.0",
     "eslint-config-airbnb": "^13.0.0",
     "eslint-plugin-import": "^2.2.0",
